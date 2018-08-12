@@ -2,48 +2,45 @@ package com.umbertopalazzini.s3zilla.concurrency;
 
 import com.amazonaws.services.s3.transfer.Download;
 import com.amazonaws.services.s3.transfer.Transfer;
-import com.amazonaws.services.s3.transfer.Upload;
+import com.umbertopalazzini.s3zilla.controller.UpdateTreeCallback;
 import com.umbertopalazzini.s3zilla.utility.Consts;
-import com.umbertopalazzini.s3zilla.view.LogItem;
+import java.util.ResourceBundle;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
-import javafx.scene.Cursor;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
-import javafx.scene.control.TableView;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.paint.Color;
-
-import java.io.File;
 
 public class TransferTask extends Task {
-    private final Transfer transfer;
-    private final File file;
 
-    private final TableView<LogItem> logTable;
+    private final Transfer transfer;
+
     private final ProgressBar progressBar;
     private final Label status;
     private final HBox actions;
 
+    private ResourceBundle bundle;
+
     private Label cancelAction;
     private Label pauseAction;
 
-    public TransferTask(Transfer transfer, File file,
-                        TableView<LogItem> logTable, ProgressBar progressBar, Label status, HBox actions) {
-        this.transfer = transfer;
-        this.file = file;
+    private UpdateTreeCallback callback;
 
-        this.logTable = logTable;
-        this.progressBar = progressBar;
-        this.status = status;
-        this.actions = actions;
+    public TransferTask(Transfer transfer, ResourceBundle bundle, ProgressBar progressBar, Label status, HBox actions, UpdateTreeCallback callback) {
+	this.transfer = transfer;
 
-        progressBar.progressProperty().bind(progressProperty());
-        status.textProperty().bind(messageProperty());
+	this.bundle = bundle;
+	this.progressBar = progressBar;
+	this.status = status;
+	this.actions = actions;
 
-        initActions();
-        initLabelsClickListener();
+	this.callback = callback;
+
+	progressBar.progressProperty().bind(progressProperty());
+	status.textProperty().bind(messageProperty());
+
+	initActions();
+	initLabelsClickListener();
     }
 
     /**
@@ -54,68 +51,65 @@ public class TransferTask extends Task {
      */
     @Override
     protected Object call() throws Exception {
-        LogItem logItem = null;
-        long transferred = 0;
 
-        // If the transfer is a download cast it to Download.
-        if (transfer instanceof Download) {
-            Download download = (Download) transfer;
+	long transferred = 0;
 
-            // If it's been downloaded from a folder extract its name.
-            String fileName = !download.getKey().contains("/")
-                    ? download.getKey()
-                    : download.getKey().substring(download.getKey().lastIndexOf('/') + 1,
-                    download.getKey().length());
+	// If the transfer is a download cast it to Download.
+//	if (transfer instanceof Download) {
+//	    Download download = (Download) transfer;
+//
+//	    // If it's been downloaded from a folder extract its name.
+//	    String fileName = !download.getKey().contains("/")
+//		    ? download.getKey()
+//		    : download.getKey().substring(download.getKey().lastIndexOf('/') + 1,
+//			    download.getKey().length());
+//
+//	    logItem = new LogItem(fileName, progressBar, download, status, actions);
+//	} // Otherwise cast it to Upload.
+//	else {
+//	    Upload upload = (Upload) transfer;
+//
+//	    logItem = new LogItem(file.getName(), progressBar, upload, status, actions);
+//	}
+	// While the transfer isn't complete, calc its download speed.
+	while (!transfer.isDone()) {
+	    long startTime = System.currentTimeMillis();
+	    Thread.sleep(1000);
+	    long endTime = System.currentTimeMillis();
 
-            logItem = new LogItem(fileName, progressBar, download, status, actions);
-        }
-        // Otherwise cast it to Upload.
-        else {
-            Upload upload = (Upload) transfer;
+	    long transferredNow = transfer.getProgress().getBytesTransferred() - transferred;
+	    // Speed in kB/s.
+	    float speed = transferredNow / ((endTime - startTime) / 1000) / Consts.KB;
 
-            logItem = new LogItem(file.getName(), progressBar, upload, status, actions);
-        }
+	    updateProgress(transfer.getProgress().getBytesTransferred(), transfer.getProgress().getTotalBytesToTransfer());
 
-        logTable.getItems().add(logItem);
+	    updateMessage(String.valueOf(speed) + " kB/s");
 
-        // While the transfer isn't complete, calc its download speed.
-        while (!transfer.isDone()) {
-            long startTime = System.currentTimeMillis();
-            Thread.sleep(1000);
-            long endTime = System.currentTimeMillis();
+	    transferred += transferredNow;
+	}
 
-            long transferredNow = transfer.getProgress().getBytesTransferred() - transferred;
-            // Speed in kB/s.
-            float speed = transferredNow / ((endTime - startTime) / 1000) / Consts.KB;
-
-            updateProgress(transfer.getProgress().getBytesTransferred(),
-                    transfer.getProgress().getTotalBytesToTransfer());
-
-            updateMessage(String.valueOf(speed) + " kB/s");
-
-            transferred += transferredNow;
-        }
-
-        return null;
+	return null;
     }
-
 
     /**
      * If the task is successful, it will execute this code.
      */
     @Override
     protected void succeeded() {
-        super.succeeded();
+	super.succeeded();
 
-        progressBar.progressProperty().unbind();
+	progressBar.progressProperty().unbind();
 
-        status.textProperty().unbind();
+	status.textProperty().unbind();
 
-        if (transfer instanceof Download) {
-            status.setText("Downloaded");
-        } else {
-            status.setText("Uploaded");
-        }
+	if (transfer instanceof Download) {
+	    status.setText(bundle.getString("transfertask.downloaded"));
+	} else {
+	    status.setText(bundle.getString("transfertask.uploaded"));
+	    if (null != callback) {
+		callback.updateLeafs();
+	    }
+	}
     }
 
     /**
@@ -123,7 +117,7 @@ public class TransferTask extends Task {
      */
     @Override
     protected void cancelled() {
-        // TODO: implement this feature.
+	// TODO: implement this feature.
     }
 
     /**
@@ -131,30 +125,29 @@ public class TransferTask extends Task {
      */
     @Override
     protected void failed() {
-        super.failed();
+	super.failed();
 
-        progressBar.progressProperty().unbind();
+	progressBar.progressProperty().unbind();
 
-        status.textProperty().unbind();
-        status.setText("Failed");
+	status.textProperty().unbind();
+	status.setText("Failed");
     }
 
     @FXML
     private void initActions() {
-        cancelAction = new Label(Consts.CANCEL);
-        cancelAction.setMaxWidth(Double.MAX_VALUE);
-        cancelAction.setCursor(Cursor.HAND);
-        cancelAction.setTextFill(Color.RED);
-
-        pauseAction = new Label(Consts.PAUSE);
-        pauseAction.setMaxWidth(Double.MAX_VALUE);
-        pauseAction.setCursor(Cursor.HAND);
-        pauseAction.setTextFill(Color.DARKORANGE);
-
-        // TODO: when the pause label is clicked change its text to RESUME and change its color this Color.LIMRGREEN
-
-        actions.getChildren().addAll(cancelAction, pauseAction);
-        actions.setHgrow(cancelAction, Priority.ALWAYS);
+//	cancelAction = new Label(Consts.CANCEL);
+//	cancelAction.setMaxWidth(Double.MAX_VALUE);
+//	cancelAction.setCursor(Cursor.HAND);
+//	cancelAction.setTextFill(Color.RED);
+//
+//	pauseAction = new Label(Consts.PAUSE);
+//	pauseAction.setMaxWidth(Double.MAX_VALUE);
+//	pauseAction.setCursor(Cursor.HAND);
+//	pauseAction.setTextFill(Color.DARKORANGE);
+//
+//	// TODO: when the pause label is clicked change its text to RESUME and change its color this Color.LIMRGREEN
+//	actions.getChildren().addAll(cancelAction, pauseAction);
+//	actions.setHgrow(cancelAction, Priority.ALWAYS);
     }
 
     @FXML

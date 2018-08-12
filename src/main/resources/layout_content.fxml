@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.ContextMenu?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.SeparatorMenuItem?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TreeTableColumn?>
+<?import javafx.scene.control.TreeTableView?>
+<?import javafx.scene.layout.AnchorPane?>
+
+<SplitPane dividerPositions="0.75" orientation="VERTICAL" xmlns="http://javafx.com/javafx/10.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.umbertopalazzini.s3zilla.controller.ContentController">
+   <items>
+      <AnchorPane>
+         <children>
+            <TreeTableView fx:id="objectTree" editable="true" prefHeight="425.0" prefWidth="235.0" showRoot="false" styleClass="listview-noborder" tableMenuButtonVisible="true" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+               <placeholder>
+                  <Label text="%objectTree.placeholder" />
+               </placeholder>
+               <columns>
+                  <TreeTableColumn fx:id="objectTreeName" editable="false" minWidth="50.0" prefWidth="507.0" text="%objectTree.name" />
+                  <TreeTableColumn fx:id="objectTreeSize" editable="false" minWidth="48.0" prefWidth="108.0" text="%objectTree.size" />
+                  <TreeTableColumn fx:id="objectTreeLastmodified" editable="false" minWidth="50.0" prefWidth="170.0" text="%objectTree.lastmodified" />
+               </columns>
+               <contextMenu>
+                  <ContextMenu fx:id="objectTreeContextMenu" onShowing="#contextMenuShowing">
+                    <items>
+                      <MenuItem fx:id="contextMenuDownload" mnemonicParsing="false" onAction="#downloadPressed" text="%objectTree.contextmenu.download.label" />
+                        <MenuItem fx:id="contextMenuUpload" mnemonicParsing="false" onAction="#uploadPressed" text="%objectTree.contextmenu.upload.label" />
+                        <SeparatorMenuItem mnemonicParsing="false" />
+                        <MenuItem mnemonicParsing="false" onAction="#refreshPressed" text="%objectTree.contextmenu.reload.label" />
+                        <MenuItem fx:id="contextMenuNewPrefix" mnemonicParsing="false" onAction="#newPrefixPressed" text="%objectTree.contextmenu.newprefix.label" />
+                        <SeparatorMenuItem mnemonicParsing="false" />
+                        <MenuItem fx:id="contextMenuDelete" mnemonicParsing="false" onAction="#deletePressed" text="%objectTree.contextmenu.delete.label" />
+                    </items>
+                  </ContextMenu>
+               </contextMenu>
+            </TreeTableView>
+         </children>
+      </AnchorPane>
+      <AnchorPane>
+         <children>
+            <TableView fx:id="logTable" layoutX="130.0" layoutY="-15.0" prefHeight="121.0" prefWidth="798.0" tableMenuButtonVisible="true" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+               <placeholder>
+                  <Label text="%logTable.placeholder" />
+               </placeholder>
+               <columns>
+                  <TableColumn fx:id="logTable_localFile" prefWidth="150.0" text="%logTable.localFile" />
+                  <TableColumn fx:id="logTable_remoteFile" minWidth="0.0" prefWidth="175.0" text="%logTable.remoteFile" />
+                  <TableColumn fx:id="logTable_progress" prefWidth="166.0" text="%logTable.progress" />
+                  <TableColumn fx:id="logTable_size" prefWidth="124.0" text="%logTable.size" />
+                  <TableColumn fx:id="logTable_status" prefWidth="75.0" text="%logTable.status" />
+                  <TableColumn fx:id="logTable_actions" prefWidth="75.0" text="%logTable.actions" />
+               </columns>
+               <columnResizePolicy>
+                  <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+               </columnResizePolicy>
+            </TableView>
+         </children>
+      </AnchorPane>
+   </items>
+</SplitPane>
