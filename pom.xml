@@ -4,7 +4,7 @@
 
     <groupId>com.github.beulenbilly</groupId>
     <artifactId>s3fxviewer</artifactId>
-    <version>1.0</version>
+    <version>1.1-SNAPSHOT</version>
 
     <properties>
 	<!-- Main Class of the application -->
@@ -180,7 +180,7 @@
     <scm>
 	<url>scm:git:ssh://git@github.com/beulenbilly/s3fxviewer.git</url>
 	<connection>scm:git:ssh://git@github.com/beulenbilly/s3fxviewer.git</connection>
-      <tag>s3fxviewer-1.0</tag>
+      <tag>HEAD</tag>
   </scm>
 
 </project>
